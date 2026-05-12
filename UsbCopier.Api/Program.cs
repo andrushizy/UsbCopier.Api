@@ -8,6 +8,24 @@ using UsbCopier.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ── Настройка порта для Railway (ДО builder.Build()) ──
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(int.Parse(port));
+    });
+}
+else
+{
+    // fallback для локальной разработки
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(8080);
+    });
+}
+
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     {
@@ -51,12 +69,20 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-var conn = builder.Configuration.GetConnectionString("Mysql")
-    ?? throw new InvalidOperationException("ConnectionStrings:Mysql не задан в appsettings.json");
+// ── Подключение к MySQL через переменные окружения Railway ──
+var mysqlHost = Environment.GetEnvironmentVariable("MYSQLHOST") ?? "localhost";
+var mysqlPort = Environment.GetEnvironmentVariable("MYSQLPORT") ?? "3306";
+var mysqlDatabase = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "usbcopier";
+var mysqlUser = Environment.GetEnvironmentVariable("MYSQLUSER") ?? "root";
+var mysqlPassword = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? "";
+
+var connectionString = $"Server={mysqlHost};Port={mysqlPort};Database={mysqlDatabase};User={mysqlUser};Password={mysqlPassword};TreatTinyAsBoolean=true;";
+
+Console.WriteLine($"Connecting to MySQL at {mysqlHost}:{mysqlPort}");
 
 builder.Services.AddDbContext<UsbCopierDbContext>(opts =>
 {
-    opts.UseMySql(conn, new MySqlServerVersion(new Version(8, 0, 0)));
+    opts.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0)));
 });
 
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
@@ -103,14 +129,7 @@ app.UseCors();
 
 // Middleware читает Authorization: Bearer и кладёт UserId/IsAdmin в HttpContext.Items.
 app.UseMiddleware<BearerAuthMiddleware>();
-var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrEmpty(port))
-{
-    builder.WebHost.ConfigureKestrel(options =>
-    {
-        options.ListenAnyIP(int.Parse(port));
-    });
-}
+
 app.MapControllers();
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
