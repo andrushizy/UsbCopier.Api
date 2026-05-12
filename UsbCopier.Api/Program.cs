@@ -72,7 +72,7 @@ builder.Services.AddSwaggerGen(c =>
 // ── Подключение к MySQL через переменные окружения Railway ──
 var mysqlHost = Environment.GetEnvironmentVariable("MYSQLHOST") ?? "localhost";
 var mysqlPort = Environment.GetEnvironmentVariable("MYSQLPORT") ?? "3306";
-var mysqlDatabase = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "usbcopier";
+var mysqlDatabase = Environment.GetEnvironmentVariable("MYSQLDATABASE") ?? "railway";
 var mysqlUser = Environment.GetEnvironmentVariable("MYSQLUSER") ?? "root";
 var mysqlPassword = Environment.GetEnvironmentVariable("MYSQLPASSWORD") ?? "";
 
