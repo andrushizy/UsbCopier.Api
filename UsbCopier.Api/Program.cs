@@ -103,7 +103,14 @@ app.UseCors();
 
 // Middleware читает Authorization: Bearer и кладёт UserId/IsAdmin в HttpContext.Items.
 app.UseMiddleware<BearerAuthMiddleware>();
-
+var port = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(port))
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(int.Parse(port));
+    });
+}
 app.MapControllers();
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
